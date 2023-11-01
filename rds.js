@@ -20,7 +20,7 @@ try {
 
   // RDS
   /*
-    Step on Console AWS: 
+    Step on Console AWS (Only need to create once): 
       - Create 1 Replication instances
       - Create source endpoint (Prd RDS)
       - Create target endpoint (Dev RDS)
