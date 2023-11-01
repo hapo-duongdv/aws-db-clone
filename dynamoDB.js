@@ -1,16 +1,19 @@
 const AWS = require("aws-sdk");
 const processDeleteItem = require("./helper/deleteItemsDynamoDB");
+const ACCESS_KEY_ID = '[access-key-id]';
+const SECRET_ACCESS_KEY = '[secret-access-key]';
+const REGION = '[region]';
 AWS.config.update({
-  region: "us-east-1", // Change region
+  region: REGION, // Change region
   credentials: {
-    accessKeyId: "",
-    secretAccessKey: "",
+    accessKeyId: ACCESS_KEY_ID,
+    secretAccessKey: SECRET_ACCESS_KEY,
   },
 });
 
 // Create a client for the DynamoDB service
 const dynamoDB = new AWS.DynamoDB({ 
-  region: "us-east-1",
+  region: REGION,
   maxRetries: 5,
   retryDelayOptions: {
     base: 300
