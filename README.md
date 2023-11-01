@@ -1,9 +1,9 @@
-# aws-db-clone
+# aws-db-clone-nodejs
 aws-db-clone: Clone DB to other DB for RDS and DynamoDB
 - DyanmoDB (Need run queue for this task)
   - Select source and target table 
   - Delete all items at target table
-  - Scan all item in source table then put it on target table
+  - Scan all items in source table then put it on target table
 - RDS
   - Using Database Migration Service (DMS) AWS to migrate from source table to target table
   - On Console DMS AWS
