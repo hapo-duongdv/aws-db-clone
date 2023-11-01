@@ -62,4 +62,4 @@ async function processDeleteItem(tableName) {
   console.log("DONE Delete", JSON.stringify(res));
 }
 
-export default processDeleteItem;
+module.exports = processDeleteItem
