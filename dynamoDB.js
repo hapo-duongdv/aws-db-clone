@@ -21,6 +21,7 @@ const TABLE_NAME_1 = "table1";
 const TABLE_NAME_2 = "table2";
 const TABLE_NAME_3 = "table3";
 const TABLE_NAME_4 = "table4";
+// ....
 
 
 const todayDate = new Date().toISOString().slice(0, 10);
@@ -73,6 +74,7 @@ try {
   const listTable = [
     [TABLE_NAME_1, TABLE_NAME_2],
     [TABLE_NAME_3, TABLE_NAME_4]
+    // ....
   ]
 
   for (const tables in listTable) {
