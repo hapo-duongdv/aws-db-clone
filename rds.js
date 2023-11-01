@@ -1,16 +1,19 @@
 const AWS = require("aws-sdk");
 const process = require("./helper/deleteItemsDynamoDB");
+const ACCESS_KEY_ID = '[access-key-id]';
+const SECRET_ACCESS_KEY = '[secret-access-key]';
+const REGION = '[region]';
 AWS.config.update({
-  region: "us-east-1", // Change region
+  region: REGION, // Change region
   credentials: {
-    accessKeyId: "",
-    secretAccessKey: "",
+    accessKeyId: ACCESS_KEY_ID,
+    secretAccessKey: SECRET_ACCESS_KEY,
   },
 });
 
 // Create a client for the RDS service
-const rds = new AWS.RDS({ region: "us-east-1" });
-const dms = new AWS.DMS({ region: "us-east-1" });
+const rds = new AWS.RDS({ region: REGION });
+const dms = new AWS.DMS({ region: REGION });
 
 const todayDate = new Date().toISOString().slice(0, 10);
 const formattedDate = todayDate.replace(/-/g, "");
