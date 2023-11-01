@@ -1,5 +1,4 @@
 const AWS = require("aws-sdk");
-const process = require("./helper/deleteItemsDynamoDB");
 const ACCESS_KEY_ID = '[access-key-id]';
 const SECRET_ACCESS_KEY = '[secret-access-key]';
 const REGION = '[region]';

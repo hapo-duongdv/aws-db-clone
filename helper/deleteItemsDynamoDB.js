@@ -1,65 +1,86 @@
-const AWS = require('aws-sdk');
-const {parallelScan} = require('@shelf/dynamodb-parallel-scan');
+const AWS = require("aws-sdk");
+const ACCESS_KEY_ID = '[access-key-id]';
+const SECRET_ACCESS_KEY = '[secret-access-key]';
+const REGION = '[region]';
+AWS.config.update({
+  region: REGION, // Change region
+  credentials: {
+    accessKeyId: ACCESS_KEY_ID,
+    secretAccessKey: SECRET_ACCESS_KEY,
+  },
+});
 
-const PRIMARY_PARTITION_KEY = '[partition-key]';
+const dynamoDB = new AWS.DynamoDB({
+  region: REGION,
+  maxRetries: 5,
+  retryDelayOptions: {
+    base: 300,
+  },
+});
 
-async function fetchAll(tableName) {
-  const CONCURRENCY = 250;
-  const alias = `#${PRIMARY_PARTITION_KEY}`;
-  const name = PRIMARY_PARTITION_KEY;
-  const scanParams = {
-    TableName: tableName,
-    ProjectionExpression: alias,
-    ExpressionAttributeNames: {[alias]: name},
-  };
+///// Process
 
-  const items = await parallelScan(scanParams, {concurrency: CONCURRENCY});
-  return items;
-}
+function breakArrayIntoGroups(data, maxPerGroup) {
+  const groups = [];
 
-function prepareRequestParams(items) {
-  const requestParams = items.map((i) => ({
-    DeleteRequest: {
-      Key: {
-        [PRIMARY_PARTITION_KEY]: i[PRIMARY_PARTITION_KEY],
-      },
-    },
-  }));
-
-  return requestParams;
-}
-
-async function sliceInChunks(arr) {
-  let i;
-  let j;
-  const CHUNK_SIZE = 25; // DynamoDB BatchWriteItem limit
-  const chunks = [];
-
-  for (i = 0, j = arr.length; i < j; i += CHUNK_SIZE) {
-    chunks.push(arr.slice(i, i + CHUNK_SIZE));
+  for (let index = 0; index < data.length; index += maxPerGroup) {
+    groups.push(data.slice(index, index + maxPerGroup));
   }
 
-  return chunks;
+  return groups;
 }
+const wipeTable = async (tableName) => {
+  const info = await dynamoDB
+    .describeTable({
+      TableName: tableName,
+    })
+    .promise();
 
-async function deleteItems(chunks, tableName) {
-  const documentclient = new AWS.DynamoDB.DocumentClient();
+  const keyHash = info.Table.KeySchema.find(
+    (k) => k.KeyType === "HASH"
+  ).AttributeName;
 
-  const promises = chunks.map(async function(chunk) {
-    const params = {RequestItems: {[tableName]: chunk}};
-    const res = await documentclient.batchWrite(params).promise();
-    return res;
-  });
+  console.log("key hash=", keyHash);
 
-  return await Promise.all(promises);
-}
+  const scan = await dynamoDB
+    .scan({
+      TableName: tableName,
+    })
+    .promise();
+  console.log(`will delete ${scan.Items.length} items from ${tableName}`);
+
+  const datagr = breakArrayIntoGroups(scan.Items, 25);
+
+  for (let i = 0; i < datagr.length; i += 1) {
+    const po = [];
+
+    for (let i2 = 0; i2 < datagr[i].length; i2 += 1) {
+      const item = datagr[i][i2];
+
+      po.push(item);
+    }
+
+    await dynamoDB
+      .batchWriteItem({
+        RequestItems: {
+          [`${tableName}`]: po.map((s) => ({
+            DeleteRequest: {
+              Key: {
+                [`${keyHash}`]: s[`${keyHash}`],
+              },
+            },
+          })),
+        },
+      })
+      .promise();
+  }
+
+  console.log("cleared table");
+};
 
 async function processDeleteItem(tableName) {
-  const items = await fetchAll(tableName);
-  const params = prepareRequestParams(items);
-  const chunks = await sliceInChunks(params);
-  const res = await deleteItems(chunks, tableName);
-  console.log("DONE Delete", JSON.stringify(res));
+  await wipeTable(tableName);
+  console.log("DONE Delete!!!");
 }
 
-export default processDeleteItem;
+module.exports = processDeleteItem;

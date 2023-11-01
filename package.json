@@ -9,7 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@shelf/dynamodb-parallel-scan": "^3.5.3",
     "aws-sdk": "^2.1484.0"
   }
 }
