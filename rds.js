@@ -31,10 +31,24 @@ try {
 function createReplicationTask() {
   const replicationTaskParams = {
     MigrationType: 'full-load',
-    TableMappings: 'YOUR_TABLE_MAPPINGS',
     SourceEndpointArn: 'YOUR_SOURCE_ENDPOINT_ARN',
     TargetEndpointArn: 'YOUR_TARGET_ENDPOINT_ARN',
     ReplicationInstanceArn: 'YOUR_REPLICATION_INSTANCE_ARN',
+    TableMappings: `
+    {
+      "rules": [
+        {
+          "rule-type": "selection",
+          "rule-id": "1",
+          "rule-action": "include",
+          "rule-source": {
+            "schema-name": "lc_dev"
+          },
+          "rule-name": "lc_dev"
+        }
+      ]
+    }
+  `,
   };
 
   dms.createReplicationTask(replicationTaskParams, (err, data) => {
@@ -63,6 +77,8 @@ function startReplicationTask(replicationTaskArn) {
 }
 
 function waitForReplicationTaskToComplete(replicationTaskArn) {
+  const MAX_RETRY = 30;
+  let tryIndex = 0;
   const params = {
     Filters: [
       {
@@ -85,7 +101,10 @@ function waitForReplicationTaskToComplete(replicationTaskArn) {
         if (status === 'Load Complete' || status === 'Stopped') {
           deleteReplicationTask(replicationTaskArn);
         } else {
-          setTimeout(() => waitForReplicationTaskToComplete(replicationTaskArn), 60000);
+          if (tryIndex < MAX_RETRY) {
+            setTimeout(() => waitForReplicationTaskToComplete(replicationTaskArn), 60000);
+            tryIndex++;
+          }
         }
       } else {
         console.error('Error');
