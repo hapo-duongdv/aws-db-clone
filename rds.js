@@ -32,7 +32,6 @@ try {
 function createReplicationTask() {
   const replicationTaskParams = {
     MigrationType: 'full-load',
-    TableMappings: 'YOUR_TABLE_MAPPINGS',
     SourceEndpointArn: 'YOUR_SOURCE_ENDPOINT_ARN',
     TargetEndpointArn: 'YOUR_TARGET_ENDPOINT_ARN',
     ReplicationInstanceArn: 'YOUR_REPLICATION_INSTANCE_ARN',
