@@ -28,56 +28,80 @@ try {
       - Create task Database migration
   */
 
-  // Run Task Database migration
-  const replicationTaskArn = 'YOUR_REPLICATION_TASK_ARN';
-  const replicationTaskName = 'YOUR_REPLICATION_TASK_ARN';
+// Tạo task replication
+function createReplicationTask() {
+  const replicationTaskParams = {
+    MigrationType: 'full-load',
+    TableMappings: 'YOUR_TABLE_MAPPINGS',
+    SourceEndpointArn: 'YOUR_SOURCE_ENDPOINT_ARN',
+    TargetEndpointArn: 'YOUR_TARGET_ENDPOINT_ARN',
+    ReplicationInstanceArn: 'YOUR_REPLICATION_INSTANCE_ARN',
+    MigrationTable: {
+      TableCount: 0,
+    },
+  };
 
-  function checkReplicationStatus() {
-    const params = {
-      Filters: [
-        {
-          Name: replicationTaskName,
-          Values: [replicationTaskArn],
-        },
-      ],
-    };
-  
-    dms.describeReplicationTasks(params, (err, data) => {
-      if (err) {
-        console.error( err);
-      } else {
-        const replicationTask = data.ReplicationTasks[0];
-  
-        if (replicationTask) {
-          const status = replicationTask.Status;
-          console.log(`${status}`);
-          if (status === 'Load Complete' || status === 'Stopped') {
-            deleteReplicationTask();
-          } else {
-            setTimeout(checkReplicationStatus, 60000);
-          }
+  dms.createReplicationTask(replicationTaskParams, (err, data) => {
+    if (err) {
+      console.log('err', err);
+    } else {
+      const replicationTaskArn = data.ReplicationTask.ReplicationTaskArn;
+      console.log('replicationTaskArn:', replicationTaskArn);
+      checkReplicationStatus(replicationTaskArn);
+    }
+  });
+}
+
+function checkReplicationStatus(replicationTaskArn) {
+  const params = {
+    Filters: [
+      {
+        Name: 'replication-task-arn',
+        Values: [replicationTaskArn],
+      },
+    ],
+  };
+
+  dms.describeReplicationTasks(params, (err, data) => {
+    if (err) {
+      console.error('err', err);
+    } else {
+      const replicationTask = data.ReplicationTasks[0];
+
+      if (replicationTask) {
+        const status = replicationTask.Status;
+        console.log(`status: ${status}`);
+
+        if (status === 'Load Complete' || status === 'Stopped') {
+          console.log('Task Done');
+          deleteReplicationTask(replicationTaskArn);
+          createReplicationTask();
         } else {
-          console.error('ERR');
+          setTimeout(() => checkReplicationStatus(replicationTaskArn), 60000);
         }
-      }
-    });
-  }
-  
-  function deleteReplicationTask() {
-    const deleteTaskParams = {
-      ReplicationTaskArn: replicationTaskArn,
-    };
-  
-    dms.deleteReplicationTask(deleteTaskParams, (err, data) => {
-      if (err) {
-        console.error('Lỗi khi xóa task replication:', err);
       } else {
-        console.log('Task replication đã được xóa.');
+        console.error('Not found task');
       }
-    });
-  }
-  
-  checkReplicationStatus();
+    }
+  });
+}
+
+function deleteReplicationTask(replicationTaskArn) {
+  const deleteTaskParams = {
+    ReplicationTaskArn: replicationTaskArn,
+  };
+
+  dms.deleteReplicationTask(deleteTaskParams, (err, data) => {
+    if (err) {
+      console.error('err', err);
+    } else {
+      console.log('Done delete task');
+    }
+  });
+}
+
+// Bắt đầu quá trình với việc tạo task replication ban đầu.
+createReplicationTask();
 
   console.log("DONE!!");
 } catch (err) {
