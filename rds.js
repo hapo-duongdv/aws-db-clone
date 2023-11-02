@@ -11,7 +11,6 @@ AWS.config.update({
 });
 
 // Create a client for the RDS service
-const rds = new AWS.RDS({ region: REGION });
 const dms = new AWS.DMS({ region: REGION });
 
 const todayDate = new Date().toISOString().slice(0, 10);
@@ -30,11 +29,55 @@ try {
   */
 
   // Run Task Database migration
-  dms.startReplicationTask({
-    ReplicationTaskArn: "", // Replication Task Arn (Required)
-    StartReplicationTaskType: "", // Replication Task Arn (Required)
-    CdcStartTime: "" 
-  })
+  const replicationTaskArn = 'YOUR_REPLICATION_TASK_ARN';
+  const replicationTaskName = 'YOUR_REPLICATION_TASK_ARN';
+
+  function checkReplicationStatus() {
+    const params = {
+      Filters: [
+        {
+          Name: replicationTaskName,
+          Values: [replicationTaskArn],
+        },
+      ],
+    };
+  
+    dms.describeReplicationTasks(params, (err, data) => {
+      if (err) {
+        console.error( err);
+      } else {
+        const replicationTask = data.ReplicationTasks[0];
+  
+        if (replicationTask) {
+          const status = replicationTask.Status;
+          console.log(`${status}`);
+          if (status === 'Load Complete' || status === 'Stopped') {
+            deleteReplicationTask();
+          } else {
+            setTimeout(checkReplicationStatus, 60000);
+          }
+        } else {
+          console.error('ERR');
+        }
+      }
+    });
+  }
+  
+  function deleteReplicationTask() {
+    const deleteTaskParams = {
+      ReplicationTaskArn: replicationTaskArn,
+    };
+  
+    dms.deleteReplicationTask(deleteTaskParams, (err, data) => {
+      if (err) {
+        console.error('Lỗi khi xóa task replication:', err);
+      } else {
+        console.log('Task replication đã được xóa.');
+      }
+    });
+  }
+  
+  checkReplicationStatus();
 
   console.log("DONE!!");
 } catch (err) {
