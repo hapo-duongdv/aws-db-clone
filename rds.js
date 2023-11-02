@@ -28,30 +28,41 @@ try {
       - Create task Database migration
   */
 
-// Tạo task replication
 function createReplicationTask() {
   const replicationTaskParams = {
     MigrationType: 'full-load',
+    TableMappings: 'YOUR_TABLE_MAPPINGS',
     SourceEndpointArn: 'YOUR_SOURCE_ENDPOINT_ARN',
     TargetEndpointArn: 'YOUR_TARGET_ENDPOINT_ARN',
     ReplicationInstanceArn: 'YOUR_REPLICATION_INSTANCE_ARN',
-    MigrationTable: {
-      TableCount: 0,
-    },
   };
 
   dms.createReplicationTask(replicationTaskParams, (err, data) => {
     if (err) {
-      console.log('err', err);
+      console.log('err:', err);
     } else {
       const replicationTaskArn = data.ReplicationTask.ReplicationTaskArn;
       console.log('replicationTaskArn:', replicationTaskArn);
-      checkReplicationStatus(replicationTaskArn);
+      startReplicationTask(replicationTaskArn);
     }
   });
 }
 
-function checkReplicationStatus(replicationTaskArn) {
+function startReplicationTask(replicationTaskArn) {
+  const startTaskParams = {
+    ReplicationTaskArn: replicationTaskArn,
+  };
+
+  dms.startReplicationTask(startTaskParams, (err, data) => {
+    if (err) {
+      console.log('err:', err);
+    } else {
+      waitForReplicationTaskToComplete(replicationTaskArn);
+    }
+  });
+}
+
+function waitForReplicationTaskToComplete(replicationTaskArn) {
   const params = {
     Filters: [
       {
@@ -72,14 +83,12 @@ function checkReplicationStatus(replicationTaskArn) {
         console.log(`status: ${status}`);
 
         if (status === 'Load Complete' || status === 'Stopped') {
-          console.log('Task Done');
           deleteReplicationTask(replicationTaskArn);
-          createReplicationTask();
         } else {
-          setTimeout(() => checkReplicationStatus(replicationTaskArn), 60000);
+          setTimeout(() => waitForReplicationTaskToComplete(replicationTaskArn), 60000);
         }
       } else {
-        console.error('Not found task');
+        console.error('Error');
       }
     }
   });
@@ -92,14 +101,13 @@ function deleteReplicationTask(replicationTaskArn) {
 
   dms.deleteReplicationTask(deleteTaskParams, (err, data) => {
     if (err) {
-      console.error('err', err);
+      console.error('err:', err);
     } else {
-      console.log('Done delete task');
+      console.log('Done delete!');
     }
   });
 }
 
-// Bắt đầu quá trình với việc tạo task replication ban đầu.
 createReplicationTask();
 
   console.log("DONE!!");
