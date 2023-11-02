@@ -34,6 +34,11 @@ function createReplicationTask() {
     SourceEndpointArn: 'YOUR_SOURCE_ENDPOINT_ARN',
     TargetEndpointArn: 'YOUR_TARGET_ENDPOINT_ARN',
     ReplicationInstanceArn: 'YOUR_REPLICATION_INSTANCE_ARN',
+    ReplicationTaskSettings: JSON.stringify({
+      FullLoadSettings: {
+        TargetTablePrepMode: "DO_NOTHING",
+      }
+    }),
     TableMappings: `
     {
       "rules": [
@@ -51,7 +56,7 @@ function createReplicationTask() {
   `,
   };
 
-  dms.createReplicationTask(replicationTaskParams, (err, data) => {
+  dms.createReplicationTask({ ...replicationTaskParams, ReplicationTaskSettings: "" }, (err, data) => {
     if (err) {
       console.log('err:', err);
     } else {
